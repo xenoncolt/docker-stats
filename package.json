@@ -1,0 +1,19 @@
+{
+  "name": "docker-status",
+  "version": "1.0.0",
+  "description": "A discord stats bot which will show docker stats",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "Xenon Colt",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.4.0",
+    "discord.js": "^14.11.0",
+    "dockerode": "^3.3.5",
+    "moment": "^2.29.4",
+    "unix-dgram": "^2.0.6"
+  }
+}
