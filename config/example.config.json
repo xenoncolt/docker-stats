@@ -1,3 +1,4 @@
 {
-    "dockerPath": "path/file/docker.sock"
+    "dockerSockPath": "path/file/docker.sock",
+    "channelId": "CHANNEL_ID"
 }

@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 const axios = require('axios');
-const {  } = require('./config/config.json');
+const dotenv = require('dotenv').config();
+const { dockerSockPath, channelId } = require('./config/config.json');
 
 const client = new Discord.Client({ 
   intents: [
@@ -9,8 +10,7 @@ const client = new Discord.Client({
   ] 
 });
 
-const dockerSockPath = '';
-const channelId = '1112514523488845974'; // Replace with your Discord channel ID
+
 axios.defaults.socketPath = dockerSockPath;
 
 client.on('ready', () => {
@@ -89,4 +89,4 @@ function formatNetworkUsage(usage) {
 }
 
 
-client.login(''); // Replace with your Discord bot token
+client.login(process.env.TOKEN); // Replace with your Discord bot token
