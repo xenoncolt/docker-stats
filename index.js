@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
 const axios = require('axios');
+const {  } = require('./config/config.json');
 
 const client = new Discord.Client({ 
   intents: [
