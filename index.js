@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
-const axios = require('axios');
+const fs = require('fs');
+const { Docker } = require('docker-cli-js');
 const dotenv = require('dotenv').config();
 const { dockerSockPath, channelId } = require('./config/config.json');
 
@@ -10,83 +11,126 @@ const client = new Discord.Client({
   ] 
 });
 
+const docker = new Docker({ socketpath: dockerSockPath });
 
-axios.defaults.socketPath = dockerSockPath;
 
-client.on('ready', () => {
-  console.log(`Logged in as ${client.user.tag}!`);
-  updateStats();
-  setInterval(updateStats, 3000); // Update stats every 5 minutes (300,000 milliseconds)
-});
+// fetch all stats from docker
+async function getDockerStats() {
+  const getStats = await docker.command('stats --no-stream --format "{{.Container}}|{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}|{{.NetIO}}|{{.BlockIO}}|{{.PIDs}}"');
+  const statsArray = getStats.raw.split('\n').slice(1, -1);
+  const activeStats = statsArray.map((stat) => {
+    const [containerId, name, cpu, mem, netIO, blockIO, pids] = stat.trim().split('|');
+    return { containerId, name, cpu, mem, netIO, blockIO, pids };
+  });
 
-async function updateStats() {
-  try {
-    const containerStats = await getContainerStats();
-    const message = buildStatsMessage(containerStats);
-    const channel = await client.channels.fetch(channelId);
-    if (channel) {
-      const botMessage = await channel.messages.fetch({ limit: 1 });
-      if (botMessage.size > 0) {
-        await botMessage.first().edit(message);
-      } else {
-        await channel.send(message);
+  return activeStats;
+}
+
+
+
+// Building Embed
+function createEmbed(stats) {
+  const embed = new Discord.EmbedBuilder()
+    .setTitle('Docker Stats')
+    .setColor('#00FF00')
+    .setDescription('Current Docker container statistics:')
+    .addFields(
+      { name: `Container ID`, 
+        value: `${stats.containerId}`
+      },
+      {
+        name: `Name`,
+        value: `${stats.name}`
+      },
+      {
+        name: `Cpu Usage`,
+        value: `${stats.cpu}`
+      },
+      {
+        name: `Memory Usage`,
+        value: `${stats.mem}`
+      },
+      {
+        name: `Network I/O`,
+        value: `${stats.netIO}`
+      },
+      {
+        name: `Disk Read/Write`,
+        value: `${stats.blockIO}`
+      },
+      {
+        name: `Number of Processes`,
+        value: `${stats.pids}`
       }
+    )
+    .setTimestamp();
+
+  return embed;
+}
+
+
+
+
+// Send docker stats to discord
+async function sendDockerStatsToDiscord() {
+  try {
+    const dockerStats = await getDockerStats();
+    const jsonStats = JSON.stringify(dockerStats, null, 2)
+
+    const channel = await client.channels.fetch(channelId);
+
+    // Fetch all bot messages in the channel
+    const messages = await channel.messages.fetch();
+    const botMessages = messages.filter((msg) => msg.author.bot);
+
+
+    // If the bot message exist, edit the first message and delete any additional messages
+    if (botMessages.size > 0) {
+      const firstMessage = botMessages.first();
+      const embed = createEmbed(dockerStats[0]);
+      await firstMessage.edit({ embeds: [embed.toJSON()] });
+
+
+      // Delete additional messages
+      botMessages.forEach(async (msg) => {
+        if (msg.id !== firstMessage.id) {
+          await msg.delete();
+        }
+      });
     } else {
-      console.log(`Could not find a channel with ID ${channelId}`);
+      //If no bot messages exist, Send a new message
+      const embed = createEmbed(dockerStats[0]);
+      await channel.send({ embeds: [embed.toJSON()] });
     }
+    setInterval(async () => {
+      const updatedStats = await getDockerStats();
+      updatedStats.forEach((stats) => {
+        const embed = createEmbed(stats);
+        const existingMessage = channel.messages.cache.find((m) =>
+          m.embeds.length && m.embeds[0].fields[0]?.value === stats.containerId
+        );
+
+        if (existingMessage) {
+          existingMessage.edit({ embeds: [embed.toJSON()] });
+        } else {
+          channel.send({ embeds: [embed.toJSON()] });
+        }
+      });
+    }, 5000);
   } catch (error) {
-    console.error('Error updating stats:', error);
-  }
-}
-
-async function getContainerStats() {
-  const url = 'http://localhost/containers/json';
-  const response = await axios.get(url);
-  const containers = response.data;
-  const statsPromises = containers.map(async (container) => {
-    const statsUrl = `http://localhost/containers/${container.Id}/stats?stream=false`;
-    const statsResponse = await axios.get(statsUrl);
-    return { name: container.Names[0], stats: statsResponse.data };
-  });
-  return Promise.all(statsPromises);
-}
-
-function buildStatsMessage(containerStats) {
-  let message = 'Docker Container Stats:\n';
-  containerStats.forEach((container) => {
-    message += `\nContainer: ${container.name}\n`;
-    message += `Memory Usage: ${formatMemoryUsage(container.stats.memory_stats.usage)}\n`;
-    message += `Network Rx: ${formatNetworkUsage(container.stats.networks.eth0.rx_bytes)}\n`;
-    message += `Network Tx: ${formatNetworkUsage(container.stats.networks.eth0.tx_bytes)}\n`;
-  });
-  return message;
-}
-
-
-function formatMemoryUsage(usage) {
-  const kb = 1024;
-  const mb = kb * 1024;
-  const gb = mb * 1024;
-
-  if (usage >= gb) {
-    return `${(usage / gb).toFixed(2)} GB`;
-  } else if (usage >= mb) {
-    return `${(usage / mb).toFixed(2)} MB`;
-  } else {
-    return `${(usage / kb).toFixed(2)} KB`;
-  }
-}
-
-function formatNetworkUsage(usage) {
-  const kbps = 1024;
-  const mbps = kbps * 1024;
-
-  if (usage >= mbps) {
-    return `${(usage / mbps).toFixed(2)} Mbps`;
-  } else {
-    return `${(usage / kbps).toFixed(2)} Kbps`;
+    console.error('Error fetching Docker stats:', error);
   }
 }
 
 
-client.login(process.env.TOKEN); // Replace with your Discord bot token
+
+// Login to bot and sent message
+
+
+
+
+
+
+
+
+client.login(process.env.TOKEN);
