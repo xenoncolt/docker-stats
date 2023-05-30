@@ -35,7 +35,7 @@
     "channelId": "CHANNEL_ID"
    }
    ```
-6. Replace the Channel ID with the ID of the channel you want the bot to post stats to. And also replace your `docker.sock` file path. If you don't know where is your `docker.sock` file then follow #
+6. Replace the Channel ID with the ID of the channel you want the bot to post stats to. And also replace your `docker.sock` file path. If you don't know where is your `docker.sock` file then follow [Docker Sock](#docker-sock)
 
 7. Start the bot:
    ```
