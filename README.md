@@ -55,7 +55,7 @@ You can check if there exist or not by running this cmd in terminal:
     ls -l C:\ProgramData\docker\docker.sock
     ```
 ### Search File Path
-If the file don't exist there then search the file using this cmd
+If the file don't exist there then search the file using this cmd 
 - On Linux:
   ```
   sudo find / -type s -name "docker.sock"
