@@ -82,7 +82,7 @@ Please make sure to update tests as appropriate.
 
 ### Contact
 <details>
-<summary>Click to expand</summary>
+<summary>Click to expand </summary>
 
 If you have any questions, comments, or concerns, please contact me on Discord: `Xenon Colt#8969`
 </details>
