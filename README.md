@@ -95,4 +95,4 @@ If you have any questions, comments, or concerns, please contact me on Discord: 
 - [Discord.js](https://discord.js.org/)
 
 - [Docker Stats](https://docs.docker.com/engine/reference/commandline/stats/)
-
+</details>
